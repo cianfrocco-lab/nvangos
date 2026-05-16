@@ -1,0 +1,9 @@
+
+data_references 
+
+loop_
+_rlnReferenceImage
+Models/pf_register_sort_box400/1_14_4_dimer_pf_molmap_alpha_start_6ang_box400.mrc
+Models/pf_register_sort_box400/1_14_4_dimer_pf_molmap_beta_start_6ang_box400.mrc
+
+ 

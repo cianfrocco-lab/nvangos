@@ -1,0 +1,13 @@
+
+data_references 
+
+loop_
+_rlnReferenceImage
+pf_sort/3_336_angpix_180_box_Models/11pf_syn_ref_tubulin_only_600A_3-336Apix.mrc
+pf_sort/3_336_angpix_180_box_Models/12pf_syn_ref_tubulin_only_600A_3-336Apix.mrc
+pf_sort/3_336_angpix_180_box_Models/13pf_syn_ref_tubulin_only_600A_3-336Apix.mrc
+pf_sort/3_336_angpix_180_box_Models/14pf_syn_ref_tubulin_only_600A_3-336Apix.mrc
+pf_sort/3_336_angpix_180_box_Models/15pf_syn_ref_tubulin_only_600A_3-336Apix.mrc
+pf_sort/3_336_angpix_180_box_Models/16pf_syn_ref_tubulin_only_600A_3-336Apix.mrc
+
+ 
