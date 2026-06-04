@@ -20,6 +20,27 @@ library(ggplot2)
 library(bio3d)
 library(ggpubr)
 
+apply_packed_pdb_chain_labels <- function(pdb, pdb.file) {
+  atom.lines <- readLines(pdb.file, warn = FALSE)
+  atom.lines <- atom.lines[grepl("^(ATOM|HETATM)", atom.lines)]
+
+  if (length(atom.lines) != nrow(pdb$atom)) {
+    warning("Could not apply packed PDB chain labels because ATOM/HETATM line count does not match Bio3D atom count.")
+    return(pdb)
+  }
+
+  packed.labels <- trimws(substr(atom.lines, 21, 22))
+  blank.labels <- is.na(packed.labels) | packed.labels == ""
+  packed.labels[blank.labels] <- pdb$atom$chain[blank.labels]
+
+  if (!"segid" %in% names(pdb$atom)) {
+    pdb$atom$segid <- ""
+  }
+
+  pdb$atom$segid <- ifelse(nchar(packed.labels) > 1, packed.labels, pdb$atom$segid)
+  pdb
+}
+
 select_calpha <- function(pdb, chain, residues, segid = NULL) {
   if (is.null(segid) || is.na(segid) || segid == "") {
     return(atom.select(pdb, "calpha", chain = chain, resno = residues))
@@ -117,8 +138,6 @@ plot_prsv_comparisons <- function(gdp.adj, tax.adj, g2p.adj,
           axis.title = element_text(size = 12, face = 'bold'),
           axis.text = element_text(size = 12, face = 'bold'))
 }
-
-
 
 
 

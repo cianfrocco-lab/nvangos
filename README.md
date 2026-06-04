@@ -37,6 +37,8 @@ pdb$atom[pdb$atom$chain == "J",]$segid <- "A02"
 pdb$atom[pdb$atom$chain == "J",]$chain <- "A"
 ```
 
+Some PHENIX/ChimeraX-written PDB files encode labels such as `A1`, `A2`, `B1`, and `B2` across the residue-name/chain fields rather than in the single-character PDB chain column. The Colab notebook detects this packed format and passes the reconstructed labels to PRSV as segment IDs.
+
 ### Google Colab
 
 Use the PRSV Colab notebook to run the R workflow without setting up R locally:
