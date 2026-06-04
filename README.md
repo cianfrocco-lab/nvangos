@@ -27,8 +27,8 @@ PRSV compares two tubulin structures by:
 The current `per-residue-structural-variance.R` implementation assumes tubulin PDB objects have:
 
 - user-specified alpha- and beta-tubulin chain IDs for each input PDB
-- compatible residue numbering across the two PDB files
-- optional segment IDs, if your PDB files require segment-level disambiguation
+- compatible residue numbering across the two input structure files
+- optional segment IDs, if your PDB/mmCIF files require segment-level disambiguation
 
 If your structures use different segment IDs, rename them before running PRSV or pass segment IDs to `prsv()`. For example, in R with `bio3d`:
 
@@ -48,8 +48,8 @@ The notebook:
 - clones this repository,
 - installs the required R packages,
 - sources `per-residue-structural-variance.R`,
-- reads two user-provided PDB files,
-- provides interactive widgets for selecting alpha- and beta-tubulin chains in each PDB,
+- reads two user-provided PDB or mmCIF structure files,
+- provides interactive widgets for selecting alpha- and beta-tubulin chains in each structure,
 - calculates PRSV values, and
 - writes CSV and PNG outputs.
 
