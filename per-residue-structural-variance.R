@@ -1,11 +1,11 @@
 ## ----------------------------------------------------------------------
 ## Title: prsv.R
 ## Purpose: Calculates the Per-Residue Structural Variance (PRSV) between
-##  two structures. Current version only works for tubulin and 
-##  requires structures to have chain name set to "A"/"B" and corresponding
-##  segment IDs to be "A01, B01, A02, etc"
+##  two structures. Current version only works for tubulin and
+##  requires users to specify the alpha- and beta-tubulin chains for each PDB.
+##  Segment IDs can also be supplied if needed.
 ##
-## A way to get around this issue is by using bio3D and renaming chains and 
+## A way to get around chain or segment naming issues is by using bio3D and renaming chains and
 ##  segids. For example,
 ##  
 ##  pdb$atom[pdb$atom$chain=="J",]$segid <- "A01"
@@ -20,14 +20,29 @@ library(ggplot2)
 library(bio3d)
 library(ggpubr)
 
+select_calpha <- function(pdb, chain, residues, segid = NULL) {
+  if (is.null(segid) || is.na(segid) || segid == "") {
+    return(atom.select(pdb, "calpha", chain = chain, resno = residues))
+  }
+
+  atom.select(pdb, "calpha", chain = chain, resno = residues, segid = segid)
+}
+
 # function to calculate prsv used in paper
-prsv <- function(base.pdb, comp.pdb) {
+prsv <- function(base.pdb, comp.pdb,
+                 base.alpha.chain = "A", base.beta.chain = "B",
+                 comp.alpha.chain = "A", comp.beta.chain = "B",
+                 base.alpha.segid = NULL, base.beta.segid = NULL,
+                 comp.alpha.segid = NULL, comp.beta.segid = NULL) {
+  alpha.residues <- c(seq(1,37),seq(48,437))
+  beta.residues <- c(seq(125),seq(130,426))
+
   # get atom selection of shared residues in chains
-  base.ainds <- atom.select(base.pdb, "calpha", chain='A', resno=c(seq(1,37),seq(48,437)), segid = 'A02')
-  comp.ainds <- atom.select(comp.pdb, "calpha", chain='A', resno=c(seq(1,37),seq(48,437)), segid = 'A02')
-  base.binds <- atom.select(base.pdb, "calpha", chain='B', resno=c(seq(125),seq(130,426)), segid = 'B02')
-  comp.binds <- atom.select(comp.pdb, "calpha", chain='B', resno=c(seq(125),seq(130,426)), segid = 'B02')
-  
+  base.ainds <- select_calpha(base.pdb, base.alpha.chain, alpha.residues, base.alpha.segid)
+  comp.ainds <- select_calpha(comp.pdb, comp.alpha.chain, alpha.residues, comp.alpha.segid)
+  base.binds <- select_calpha(base.pdb, base.beta.chain, beta.residues, base.beta.segid)
+  comp.binds <- select_calpha(comp.pdb, comp.beta.chain, beta.residues, comp.beta.segid)
+
   # make distance maps for alpha and beta chains
   base.a.dm <- dist.xyz(base.pdb$xyz[base.ainds$xyz])
   comp.a.dm <- dist.xyz(comp.pdb$xyz[comp.ainds$xyz])
@@ -41,41 +56,67 @@ prsv <- function(base.pdb, comp.pdb) {
   prsv.a <- as.vector(apply(diff.a.dm, 1, var))
   prsv.b <- as.vector(apply(diff.b.dm, 1, var))
   
-  a.tib <- tibble(Res = c(seq(1,37),seq(48,437)), PRSV = prsv.a) %>% mutate(Chain = 'A')
-  b.tib <- tibble(Res = c(seq(125),seq(130,426)), PRSV = prsv.b) %>% mutate(Chain = 'B')
-  
+  a.tib <- tibble(Res = alpha.residues, PRSV = prsv.a) %>%
+    mutate(Tubulin = 'Alpha',
+           Base_chain = base.alpha.chain,
+           Comparison_chain = comp.alpha.chain)
+  b.tib <- tibble(Res = beta.residues, PRSV = prsv.b) %>%
+    mutate(Tubulin = 'Beta',
+           Base_chain = base.beta.chain,
+           Comparison_chain = comp.beta.chain)
+
   return(rbind(a.tib,b.tib))
 }
 
-# example code to reproduce plots in paper from single protofilament PDB files
-gdp.tax.prsv <- prsv(gdp.adj, tax.adj) %>% mutate(Comparison = 'GDP-TAX')
-gdp.g2p.prsv <- prsv(gdp.adj, g2p.adj) %>% mutate(Comparison = 'GDP-GMPCPP')
-tax.g2p.prsv <- prsv(tax.adj, g2p.adj) %>% mutate(Comparison = 'TAX-GMPCPP')
+plot_prsv_comparisons <- function(gdp.adj, tax.adj, g2p.adj,
+                                  gdp.alpha.chain = "A", gdp.beta.chain = "B",
+                                  tax.alpha.chain = "A", tax.beta.chain = "B",
+                                  g2p.alpha.chain = "A", g2p.beta.chain = "B",
+                                  gdp.alpha.segid = NULL, gdp.beta.segid = NULL,
+                                  tax.alpha.segid = NULL, tax.beta.segid = NULL,
+                                  g2p.alpha.segid = NULL, g2p.beta.segid = NULL) {
+  # Example code to reproduce plots in paper from single protofilament PDB files.
+  gdp.tax.prsv <- prsv(gdp.adj, tax.adj,
+                       base.alpha.chain = gdp.alpha.chain, base.beta.chain = gdp.beta.chain,
+                       comp.alpha.chain = tax.alpha.chain, comp.beta.chain = tax.beta.chain,
+                       base.alpha.segid = gdp.alpha.segid, base.beta.segid = gdp.beta.segid,
+                       comp.alpha.segid = tax.alpha.segid, comp.beta.segid = tax.beta.segid) %>%
+    mutate(Comparison = 'GDP-TAX')
+  gdp.g2p.prsv <- prsv(gdp.adj, g2p.adj,
+                       base.alpha.chain = gdp.alpha.chain, base.beta.chain = gdp.beta.chain,
+                       comp.alpha.chain = g2p.alpha.chain, comp.beta.chain = g2p.beta.chain,
+                       base.alpha.segid = gdp.alpha.segid, base.beta.segid = gdp.beta.segid,
+                       comp.alpha.segid = g2p.alpha.segid, comp.beta.segid = g2p.beta.segid) %>%
+    mutate(Comparison = 'GDP-GMPCPP')
+  tax.g2p.prsv <- prsv(tax.adj, g2p.adj,
+                       base.alpha.chain = tax.alpha.chain, base.beta.chain = tax.beta.chain,
+                       comp.alpha.chain = g2p.alpha.chain, comp.beta.chain = g2p.beta.chain,
+                       base.alpha.segid = tax.alpha.segid, base.beta.segid = tax.beta.segid,
+                       comp.alpha.segid = g2p.alpha.segid, comp.beta.segid = g2p.beta.segid) %>%
+    mutate(Comparison = 'TAX-GMPCPP')
 
-
-# plotting code 
-rbind(gdp.tax.prsv, gdp.g2p.prsv, tax.g2p.prsv) %>%
-  # bind rows is to add the gap in alpha where the 36-48 residue chain is missing
-  bind_rows(x = ., y = tibble(Res = as.double(rep(seq(37,47),3)), Chain = 'A', PRSV = NA, 
-                              Comparison = c(rep('GDP-GMPCPP',11),rep('GDP-TAX',11),rep('TAX-GMPCPP',11)))) %>% 
-  ggplot() + 
-  geom_line(aes(x = Res, y = PRSV, color = Comparison)) +
-  geom_area(aes(x = Res, y = PRSV, fill = Comparison, group = Comparison), alpha = 0.3) +
-  #geom_hline(yintercept = 1.0, linetype = 'dashed') +
-  facet_wrap(factor(Comparison, c('GDP-GMPCPP','GDP-TAX','TAX-GMPCPP'))~Chain, ncol = 2) +
-  coord_cartesian(clip = 'off') +
-  scale_y_continuous(limits = c(0,3), breaks = seq(0,3,1)) +
-  labs(x = 'Residue', y = expression(bold(paste('Per Residue Structural Variance ', (ring(A)^2))))) + 
-  scale_fill_manual(values = c('#299446','#3E87C1','#8B4D9D')) +
-  scale_color_manual(values = c('#299446','#3E87C1','#8B4D9D')) +
-  theme_pubr(legend = 'none') + 
-  theme(strip.background = element_blank(),
-        strip.text = element_blank(),
-        panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
-        axis.title = element_text(size = 12, face = 'bold'),
-        axis.text = element_text(size = 12, face = 'bold'))
-
-
+  rbind(gdp.tax.prsv, gdp.g2p.prsv, tax.g2p.prsv) %>%
+    # Bind rows to add the gap in alpha where the 36-48 residue chain is missing.
+    bind_rows(x = ., y = tibble(Res = as.double(rep(seq(37,47),3)), Tubulin = 'Alpha', PRSV = NA,
+                                Base_chain = NA, Comparison_chain = NA,
+                                Comparison = c(rep('GDP-GMPCPP',11),rep('GDP-TAX',11),rep('TAX-GMPCPP',11)))) %>%
+    ggplot() +
+    geom_line(aes(x = Res, y = PRSV, color = Comparison)) +
+    geom_area(aes(x = Res, y = PRSV, fill = Comparison, group = Comparison), alpha = 0.3) +
+    #geom_hline(yintercept = 1.0, linetype = 'dashed') +
+    facet_wrap(factor(Comparison, c('GDP-GMPCPP','GDP-TAX','TAX-GMPCPP'))~Tubulin, ncol = 2) +
+    coord_cartesian(clip = 'off') +
+    scale_y_continuous(limits = c(0,3), breaks = seq(0,3,1)) +
+    labs(x = 'Residue', y = expression(bold(paste('Per Residue Structural Variance ', (ring(A)^2))))) +
+    scale_fill_manual(values = c('#299446','#3E87C1','#8B4D9D')) +
+    scale_color_manual(values = c('#299446','#3E87C1','#8B4D9D')) +
+    theme_pubr(legend = 'none') +
+    theme(strip.background = element_blank(),
+          strip.text = element_blank(),
+          panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+          axis.title = element_text(size = 12, face = 'bold'),
+          axis.text = element_text(size = 12, face = 'bold'))
+}
 
 
 
