@@ -42,11 +42,37 @@ apply_packed_pdb_chain_labels <- function(pdb, pdb.file) {
 }
 
 select_calpha <- function(pdb, chain, residues, segid = NULL) {
-  if (is.null(segid) || is.na(segid) || segid == "") {
-    return(atom.select(pdb, "calpha", chain = chain, resno = residues))
+  atoms <- pdb$atom
+  keep <- atoms$elety == "CA" & atoms$chain == chain & atoms$resno %in% residues
+
+  if (!is.null(segid) && !is.na(segid) && segid != "" && "segid" %in% names(atoms)) {
+    keep <- keep & atoms$segid == segid
   }
 
-  atom.select(pdb, "calpha", chain = chain, resno = residues, segid = segid)
+  atom.inds <- which(keep)
+
+  if (length(atom.inds) == 0) {
+    label <- ifelse(is.null(segid) || is.na(segid) || segid == "", chain, paste0(segid, " (chain ", chain, ")"))
+    stop("No CA atoms found for ", label, ". Check the selected chain and segment ID.", call. = FALSE)
+  }
+
+  residue.order <- match(residues, atoms$resno[atom.inds])
+  missing.residues <- residues[is.na(residue.order)]
+
+  if (length(missing.residues) > 0) {
+    label <- ifelse(is.null(segid) || is.na(segid) || segid == "", chain, paste0(segid, " (chain ", chain, ")"))
+    stop("Missing expected CA residues for ", label, ": ",
+         paste(head(missing.residues, 20), collapse = ", "),
+         ifelse(length(missing.residues) > 20, ", ...", ""),
+         call. = FALSE)
+  }
+
+  ordered.atom.inds <- atom.inds[residue.order]
+
+  list(
+    atom = ordered.atom.inds,
+    xyz = as.vector(rbind(3 * ordered.atom.inds - 2, 3 * ordered.atom.inds - 1, 3 * ordered.atom.inds))
+  )
 }
 
 # function to calculate prsv used in paper
@@ -138,6 +164,5 @@ plot_prsv_comparisons <- function(gdp.adj, tax.adj, g2p.adj,
           axis.title = element_text(size = 12, face = 'bold'),
           axis.text = element_text(size = 12, face = 'bold'))
 }
-
 
 
