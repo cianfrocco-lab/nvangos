@@ -52,6 +52,7 @@ The notebook:
 - sources `per-residue-structural-variance.R`,
 - reads two user-provided PDB or mmCIF structure files,
 - provides interactive widgets for selecting alpha- and beta-tubulin chains in each structure,
+- provides a user-defined plot y-axis maximum, defaulting to `3`,
 - calculates PRSV values, and
 - writes CSV and PNG outputs.
 

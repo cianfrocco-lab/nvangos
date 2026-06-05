@@ -121,7 +121,12 @@ plot_prsv_comparisons <- function(gdp.adj, tax.adj, g2p.adj,
                                   g2p.alpha.chain = "A", g2p.beta.chain = "B",
                                   gdp.alpha.segid = NULL, gdp.beta.segid = NULL,
                                   tax.alpha.segid = NULL, tax.beta.segid = NULL,
-                                  g2p.alpha.segid = NULL, g2p.beta.segid = NULL) {
+                                  g2p.alpha.segid = NULL, g2p.beta.segid = NULL,
+                                  y.max = 3) {
+  if (is.na(y.max) || y.max <= 0) {
+    y.max <- 3
+  }
+
   # Example code to reproduce plots in paper from single protofilament PDB files.
   gdp.tax.prsv <- prsv(gdp.adj, tax.adj,
                        base.alpha.chain = gdp.alpha.chain, base.beta.chain = gdp.beta.chain,
@@ -153,7 +158,7 @@ plot_prsv_comparisons <- function(gdp.adj, tax.adj, g2p.adj,
     #geom_hline(yintercept = 1.0, linetype = 'dashed') +
     facet_wrap(factor(Comparison, c('GDP-GMPCPP','GDP-TAX','TAX-GMPCPP'))~Tubulin, ncol = 2) +
     coord_cartesian(clip = 'off') +
-    scale_y_continuous(limits = c(0,3), breaks = seq(0,3,1)) +
+    scale_y_continuous(limits = c(0,y.max), breaks = seq(0,y.max,1)) +
     labs(x = 'Residue', y = expression(bold(paste('Per Residue Structural Variance ', (ring(A)^2))))) +
     scale_fill_manual(values = c('#299446','#3E87C1','#8B4D9D')) +
     scale_color_manual(values = c('#299446','#3E87C1','#8B4D9D')) +
@@ -164,5 +169,4 @@ plot_prsv_comparisons <- function(gdp.adj, tax.adj, g2p.adj,
           axis.title = element_text(size = 12, face = 'bold'),
           axis.text = element_text(size = 12, face = 'bold'))
 }
-
 
