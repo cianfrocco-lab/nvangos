@@ -2,7 +2,9 @@
 
 #Import necessary modules
 
+import argparse
 import math
+import os
 import numpy as np
 import Bio.Align
 from Bio.Align import Alignment
@@ -12,28 +14,195 @@ one_letter_codes = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
      'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
      'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
 
-#Inputs:
 
-file_1='input_file_1.pdb'                               ### CHANGE INPUT FILE NAME 1 HERE ###
-file_1_number='1'
-file_2='input_file_2.pdb'              ### CHANGE INPUT FILE NAME 2 HERE ###
-file_2_number='2'
+def parse_ca_atom_line(line, target_chain):
+    """Return CA atom info for standard PDB or packed labels like METB1."""
+    if not line.startswith("ATOM"):
+        return None
 
-color = "green"                                         ### CHANGE PSEUDOBOND COLOR HERE (can also edit file header later) ###
-radius = "0.3"                                          ### CHANGE PSEUDOBOND RADIUS HERE (can also edit file header later) ###
-dashes = "1"
+    fields = line.split()
+    if len(fields) < 8 or fields[2] != "CA":
+        return None
 
-chains=['B','C','H','F','P','N','J','K']                ### CHANGE CHAINS TO ANALYZE HERE ###
+    residue_field = fields[3]
+
+    if len(residue_field) > 3 and residue_field[:3] in one_letter_codes:
+        residue = residue_field[:3]
+        chain = residue_field[3:]
+        residue_num = fields[4]
+        coord_start = 5
+    else:
+        if len(fields) < 9:
+            return None
+        residue = residue_field
+        chain = fields[4]
+        residue_num = fields[5]
+        coord_start = 6
+
+    if chain != target_chain:
+        return None
+
+    try:
+        return (
+            residue_num,
+            residue,
+            float(fields[coord_start]),
+            float(fields[coord_start + 1]),
+            float(fields[coord_start + 2]),
+        )
+    except (IndexError, ValueError):
+        return None
 
 
-#output
-outfile1='ca_distances.defattr'
-outfile2='colored_vectors_XYZ.bild'
-outfile3='colored_vectors_XYZ.pb'
-outfile4='ca_distances_XY_only.defattr'
-outfile5='colored_vectors_XY_only.bild'
-outfile6='ca_distances_Z_only.defattr'
-outfile7='colored_vectors_Z_only.bild'
+def load_chain_ca_atoms(pdb_file, chain):
+    chain_info = {}
+    residue_index = []
+    sequence = ''
+
+    with open(pdb_file, 'r') as pdbopen:
+        for line in pdbopen:
+            parsed = parse_ca_atom_line(line, chain)
+            if parsed is None:
+                continue
+
+            residue_num, residue, positionX, positionY, positionZ = parsed
+            one_letter = one_letter_codes.get(residue)
+            if one_letter is None:
+                continue
+
+            chain_info.update({residue_num: (residue, positionX, positionY, positionZ)})
+            residue_index.append(residue_num)
+            sequence = sequence + one_letter
+
+    return chain_info, residue_index, sequence
+
+
+def get_ca_chain_ids(pdb_file):
+    chains = []
+    seen = set()
+
+    with open(pdb_file, 'r') as pdbopen:
+        for line in pdbopen:
+            if not line.startswith("ATOM"):
+                continue
+
+            fields = line.split()
+            if len(fields) < 8 or fields[2] != "CA":
+                continue
+
+            residue_field = fields[3]
+            if len(residue_field) > 3 and residue_field[:3] in one_letter_codes:
+                chain = residue_field[3:]
+            elif len(fields) >= 9:
+                chain = fields[4]
+            else:
+                continue
+
+            if chain not in seen:
+                seen.add(chain)
+                chains.append(chain)
+
+    return chains
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Generate ChimeraX .defattr, .bild, and .pb files from per-residue CA vectors between two aligned PDB models."
+    )
+    parser.add_argument(
+        "file_1",
+        help="First aligned PDB model.",
+    )
+    parser.add_argument(
+        "file_2",
+        help="Second aligned PDB model.",
+    )
+    parser.add_argument(
+        "--chains",
+        nargs="+",
+        default=None,
+        help="Chain IDs to analyze, in order. If omitted, all matching CA chain IDs present in both models are used.",
+    )
+    parser.add_argument("--file-1-number", default="1", help="ChimeraX model number for file 1. Default: %(default)s")
+    parser.add_argument("--file-2-number", default="2", help="ChimeraX model number for file 2. Default: %(default)s")
+    parser.add_argument("--color", default="blue", help="Pseudobond color written to the .pb header. Default: %(default)s")
+    parser.add_argument("--radius", default="0.3", help="Pseudobond radius written to the .pb header. Default: %(default)s")
+    parser.add_argument("--dashes", default="1", help="Pseudobond dashes value written to the .pb header. Default: %(default)s")
+    parser.add_argument("--out-ca", default=None, help="Output CA distance .defattr file. Default: ca_distances.defattr beside file_1")
+    parser.add_argument("--out-bild-xyz", default=None, help="Output XYZ .bild file. Default: colored_vectors_XYZ.bild beside file_1")
+    parser.add_argument("--out-pb-xyz", default=None, help="Output XYZ .pb file. Default: colored_vectors_XYZ.pb beside file_1")
+    parser.add_argument("--out-ca-xy", default=None, help="Output XY distance .defattr file. Default: ca_distances_XY_only.defattr beside file_1")
+    parser.add_argument("--out-bild-xy", default=None, help="Output XY .bild file. Default: colored_vectors_XY_only.bild beside file_1")
+    parser.add_argument("--out-ca-z", default=None, help="Output Z distance .defattr file. Default: ca_distances_Z_only.defattr beside file_1")
+    parser.add_argument("--out-bild-z", default=None, help="Output Z .bild file. Default: colored_vectors_Z_only.bild beside file_1")
+    return parser.parse_args()
+
+
+def resolve_chains(file_1, file_2, requested_chains=None):
+    file_1_chains = get_ca_chain_ids(file_1)
+    file_2_chains = get_ca_chain_ids(file_2)
+    file_1_set = set(file_1_chains)
+    file_2_set = set(file_2_chains)
+
+    if file_1_set != file_2_set:
+        only_file_1 = sorted(file_1_set - file_2_set)
+        only_file_2 = sorted(file_2_set - file_1_set)
+        raise ValueError(
+            "Input models do not have the same CA chain IDs.\n"
+            "%s chains: %s\n"
+            "%s chains: %s\n"
+            "Only in %s: %s\n"
+            "Only in %s: %s"
+            % (file_1, file_1_chains, file_2, file_2_chains, file_1, only_file_1, file_2, only_file_2)
+        )
+
+    if requested_chains is None:
+        return sorted(file_1_chains)
+
+    missing_file_1 = [chain for chain in requested_chains if chain not in file_1_set]
+    missing_file_2 = [chain for chain in requested_chains if chain not in file_2_set]
+
+    if missing_file_1 or missing_file_2:
+        raise ValueError(
+            "Requested chains are missing from one or both models.\n"
+            "Missing from %s: %s\n"
+            "Missing from %s: %s"
+            % (file_1, missing_file_1, file_2, missing_file_2)
+        )
+
+    return requested_chains
+
+
+def output_path_for_file_1(file_1, output_path, default_name):
+    file_1_dir = os.path.dirname(os.path.abspath(file_1))
+    output_name = output_path if output_path is not None else default_name
+
+    if os.path.isabs(output_name):
+        return output_name
+
+    return os.path.join(file_1_dir, output_name)
+
+args = parse_args()
+
+file_1 = args.file_1
+file_1_number = args.file_1_number
+file_2 = args.file_2
+file_2_number = args.file_2_number
+
+color = args.color
+radius = args.radius
+dashes = args.dashes
+
+chains = resolve_chains(file_1, file_2, args.chains)
+print("Analyzing chains: %s" % ", ".join(chains))
+
+outfile1 = output_path_for_file_1(file_1, args.out_ca, "ca_distances.defattr")
+outfile2 = output_path_for_file_1(file_1, args.out_bild_xyz, "colored_vectors_XYZ.bild")
+outfile3 = output_path_for_file_1(file_1, args.out_pb_xyz, "colored_vectors_XYZ.pb")
+outfile4 = output_path_for_file_1(file_1, args.out_ca_xy, "ca_distances_XY_only.defattr")
+outfile5 = output_path_for_file_1(file_1, args.out_bild_xy, "colored_vectors_XY_only.bild")
+outfile6 = output_path_for_file_1(file_1, args.out_ca_z, "ca_distances_Z_only.defattr")
+outfile7 = output_path_for_file_1(file_1, args.out_bild_z, "colored_vectors_Z_only.bild")
 
 
 '''This script will generate .bild and .pb files with per-residue CA vectors between two models colored by orientation angle. ChimeraX can display these files.
@@ -114,51 +283,14 @@ for chain in chains:
     file2_index = []
     file2_sequence = ''
 
-    pdbopen=open(file_1,'r')
-    
-    for line in pdbopen:
-        if 'ATOM' in line:
-            if line.split()[4] == chain:
-                atom=line.split()[2]
-                if atom=='CA':
-                    residue_num = line.split()[5]   
-                    residue = line.split()[3]
-                    positionX = float(line.split()[6])
-                    positionY = float(line.split()[7])
-                    positionZ = float(line.split()[8])
+    chain_info_file1, file1_index, file1_sequence = load_chain_ca_atoms(file_1, chain)
+    chain_info_file2, file2_index, file2_sequence = load_chain_ca_atoms(file_2, chain)
 
-#                    print({residue_num:(residue,positionX,positionY,positionZ)}) # FOR TESTING
-
-                    chain_info_file1.update({residue_num:(residue,positionX,positionY,positionZ)})
-
-                    file1_index.append(residue_num)
-
-                    file1_sequence = file1_sequence + one_letter_codes.get(residue)
-                    
-    pdbopen.close()
-
-    pdbopen=open(file_2,'r')
-
-    for line in pdbopen:
-        if 'ATOM' in line:
-            if line.split()[4] == chain:
-                atom=line.split()[2]
-                if atom=='CA':
-                    residue_num = line.split()[5]   
-                    residue = line.split()[3]
-                    positionX = float(line.split()[6])
-                    positionY = float(line.split()[7])
-                    positionZ = float(line.split()[8])
-
-    #                print({residue_num:(residue,positionX,positionY,positionZ)}) # FOR TESTING
-
-                    chain_info_file2.update({residue_num:(residue,positionX,positionY,positionZ)})
-
-                    file2_index.append(residue_num)
-
-                    file2_sequence = file2_sequence + one_letter_codes.get(residue)
-                    
-    pdbopen.close()
+    if len(file1_sequence) == 0 or len(file2_sequence) == 0:
+        raise ValueError(
+            "No CA sequence found for chain %s. %s has %s CA residues; %s has %s CA residues."
+            % (chain, file_1, len(file1_sequence), file_2, len(file2_sequence))
+        )
 
     '''
     if int(list(chain_info_file1.keys())[-1]) > int(list(chain_info_file2.keys())[-1]):
@@ -269,48 +401,14 @@ for chain in chains:
     vector_components = {}
     colored_vectors = {} 
 
-    pdbopen=open(file_1,'r')
-    
-    for line in pdbopen:
-        if 'ATOM' in line:
-            if line.split()[4] == chain:
-                atom=line.split()[2]
-                if atom=='CA':
-                    residue_num = line.split()[5]   
-                    residue = line.split()[3]
-                    positionX = float(line.split()[6])
-                    positionY = float(line.split()[7])
-                    positionZ = float(line.split()[8])
+    chain_info_file1, file1_index, file1_sequence = load_chain_ca_atoms(file_1, chain)
+    chain_info_file2, file2_index, file2_sequence = load_chain_ca_atoms(file_2, chain)
 
-                    chain_info_file1.update({residue_num:(residue,positionX,positionY,positionZ)})
-
-                    file1_index.append(residue_num)
-
-                    file1_sequence = file1_sequence + one_letter_codes.get(residue)
-                    
-#                    print(chain_info_file1)  # FOR TESTING
-    pdbopen.close()
-
-    pdbopen=open(file_2,'r')
-
-    for line in pdbopen:
-        if 'ATOM' in line:
-            if line.split()[4] == chain:
-                atom=line.split()[2]
-                if atom=='CA':
-                    residue_num = line.split()[5]   
-                    residue = line.split()[3]
-                    positionX = float(line.split()[6])
-                    positionY = float(line.split()[7])
-                    positionZ = float(line.split()[8])
-
-                    chain_info_file2.update({residue_num:(residue,positionX,positionY,positionZ)})
-
-                    file2_index.append(residue_num)
-
-                    file2_sequence = file2_sequence + one_letter_codes.get(residue)                    
-#                    print(chain_info_file1)  # FOR TESTING
-    pdbopen.close()
+    if len(file1_sequence) == 0 or len(file2_sequence) == 0:
+        raise ValueError(
+            "No CA sequence found for chain %s. %s has %s CA residues; %s has %s CA residues."
+            % (chain, file_1, len(file1_sequence), file_2, len(file2_sequence))
+        )
 
 #    print(file1_sequence)  # FOR TESTING
 #    print(file2_sequence)  # FOR TESTING

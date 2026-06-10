@@ -99,7 +99,58 @@ write.csv(prsv_values, "prsv_values.csv", row.names = FALSE)
 
 To display structural changes between two structural states, you can calculate vectors and attribute files with this script. The output files can be opened in ChimeraX. 
 
-`create_scaled_vector_bild_and_defattr_files.py`
+'''$ python create_scaled_vector_bild_and_defattr_files.py --help
+usage: create_scaled_vector_bild_and_defattr_files.py [-h] [--chains CHAINS [CHAINS ...]]
+                                                      [--file-1-number FILE_1_NUMBER] [--file-2-number FILE_2_NUMBER]
+                                                      [--color COLOR] [--radius RADIUS] [--dashes DASHES]
+                                                      [--out-ca OUT_CA] [--out-bild-xyz OUT_BILD_XYZ]
+                                                      [--out-pb-xyz OUT_PB_XYZ] [--out-ca-xy OUT_CA_XY]
+                                                      [--out-bild-xy OUT_BILD_XY] [--out-ca-z OUT_CA_Z]
+                                                      [--out-bild-z OUT_BILD_Z]
+                                                      file_1 file_2
+
+Generate ChimeraX .defattr, .bild, and .pb files from per-residue CA vectors between two aligned PDB models.
+
+positional arguments:
+  file_1                First aligned PDB model.
+  file_2                Second aligned PDB model.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --chains CHAINS [CHAINS ...]
+                        Chain IDs to analyze, in order. If omitted, all matching CA chain IDs present in both models are
+                        used.
+  --file-1-number FILE_1_NUMBER
+                        ChimeraX model number for file 1. Default: 1
+  --file-2-number FILE_2_NUMBER
+                        ChimeraX model number for file 2. Default: 2
+  --color COLOR         Pseudobond color written to the .pb header. Default: blue
+  --radius RADIUS       Pseudobond radius written to the .pb header. Default: 0.3
+  --dashes DASHES       Pseudobond dashes value written to the .pb header. Default: 1
+  --out-ca OUT_CA       Output CA distance .defattr file. Default: ca_distances.defattr beside file_1
+  --out-bild-xyz OUT_BILD_XYZ
+                        Output XYZ .bild file. Default: colored_vectors_XYZ.bild beside file_1
+  --out-pb-xyz OUT_PB_XYZ
+                        Output XYZ .pb file. Default: colored_vectors_XYZ.pb beside file_1
+  --out-ca-xy OUT_CA_XY
+                        Output XY distance .defattr file. Default: ca_distances_XY_only.defattr beside file_1
+  --out-bild-xy OUT_BILD_XY
+                        Output XY .bild file. Default: colored_vectors_XY_only.bild beside file_1
+  --out-ca-z OUT_CA_Z   Output Z distance .defattr file. Default: ca_distances_Z_only.defattr beside file_1
+  --out-bild-z OUT_BILD_Z
+                        Output Z .bild file. Default: colored_vectors_Z_only.bild beside file_1'''
+
+Example running with two input files (that are aligned to each other) using default options: 
+`$ python create_scaled_vector_bild_and_defattr_files.py file1.pdb file2-alignedToFile1.pdb`
+
+This will output the following files:
+* ca_distances.defattr - attribute file to color models in ChimeraX according to alpha carbon distances
+* colored_vectors_XYZ.bild - 
+* colored_vectors_XYZ.pb
+* ca_distances_XY_only.defattr
+* colored_vectors_XY_only.bild
+* ca_distances_Z_only.defattr
+* colored_vectors_Z_only.bild
 
 ## RELION-based cryo-EM processing of microtubule datasets 
 
