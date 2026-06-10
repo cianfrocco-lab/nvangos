@@ -99,7 +99,7 @@ write.csv(prsv_values, "prsv_values.csv", row.names = FALSE)
 
 To display structural changes between two structural states, you can calculate vectors and attribute files with this script. The output files can be opened in ChimeraX. 
 
-'''
+```
 $ python create_scaled_vector_bild_and_defattr_files.py --help
 usage: create_scaled_vector_bild_and_defattr_files.py [-h] [--chains CHAINS [CHAINS ...]]
                                                       [--file-1-number FILE_1_NUMBER] [--file-2-number FILE_2_NUMBER]
@@ -140,8 +140,7 @@ optional arguments:
   --out-ca-z OUT_CA_Z   Output Z distance .defattr file. Default: ca_distances_Z_only.defattr beside file_1
   --out-bild-z OUT_BILD_Z
                         Output Z .bild file. Default: colored_vectors_Z_only.bild beside file_1
-
-'''
+```
 
 Example running with two input files (that are aligned to each other) using default options: 
 `$ python create_scaled_vector_bild_and_defattr_files.py file1.pdb file2-alignedToFile1.pdb`
