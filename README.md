@@ -145,12 +145,12 @@ Example running with two input files (that are aligned to each other) using defa
 
 This will output the following files:
 * ca_distances.defattr - attribute file to color models in ChimeraX according to alpha carbon distances
-* colored_vectors_XYZ.bild - 
-* colored_vectors_XYZ.pb
-* ca_distances_XY_only.defattr
-* colored_vectors_XY_only.bild
-* ca_distances_Z_only.defattr
-* colored_vectors_Z_only.bild
+* colored_vectors_XYZ.bild - vectors colored according to X, Y, & Z to be opened in ChimeraX
+* colored_vectors_XYZ.pb - vectors colored according to X, Y, & Z to be opened in ChimeraX
+* ca_distances_XY_only.defattr - attribute file coloring models in ChimeraX according to X & Y alpha carbon distances only
+* colored_vectors_XY_only.bild - vectors colored according to X & Y displacements only for alpha carbon differences
+* ca_distances_Z_only.defattr - attribute file to color models according to Z-only alpha carbon differences
+* colored_vectors_Z_only.bild - vector file to color models according to Z-only alpha carbon differences 
 
 ## RELION-based cryo-EM processing of microtubule datasets 
 
