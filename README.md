@@ -1,6 +1,6 @@
 # nvangos
 
-`nvangos` is a collection of cryo-EM processing and structural-analysis utilities from the Cianfrocco lab for microtubule structure determined, related to [Vangos et al. 2026] (https://www.biorxiv.org/content/10.64898/2026.05.17.725690v1). The scripts are intended for users who already work with microtubule cryo-EM datasets and structures that have been processed in RELION and ChimeraX. 
+`nvangos` is a collection of cryo-EM processing and structural-analysis utilities from the Cianfrocco lab for microtubule structure determined, related to [Vangos et al. 2026](https://www.biorxiv.org/content/10.64898/2026.05.17.725690v1). The scripts are intended for users who already work with microtubule cryo-EM datasets and structures that have been processed in RELION and ChimeraX. 
 
 ## Contents
 
@@ -8,7 +8,7 @@
 | --- | --- |
 | `Detailed Microtubule Cryo-EM RELION Processing Guide.pdf` | Step-by-step guide to determine one and two protofilament microtubule structures using RELION. |
 | `per-residue-structural-variance.R` | Calculates per-residue structural variance (PRSV) between two structures of the same protein and plots pairwise comparisons. Can be run from Google Colab Notebook or locally|
-| `notebook/per_residue_structural_variance_colab.ipynb | Python notebook that can run per-residue-structural-variance.R on Goolge Colab |
+| `notebook/per_residue_structural_variance_colab.ipynb` | Python notebook that can run per-residue-structural-variance.R on Goolge Colab |
 | `create_scaled_vector_bild_and_defattr_files.py` | Creates ChimeraX `.bild`, `.pb`, and `.defattr` files for visualizing per-residue alpha-carbon displacement vectors between two PDB models of the same protein/biomolecule. |
 | `combine_opposite_register_ptcls_for_seam.py` | Inner-joins two RELION particle STAR files from opposite sides of a 2-protofilament seam stack with alternating registers. |
 | `curate_micrographs_by_particle_picks.py` | Filters a RELION `micrographs_ctf.star` file to retain micrographs with particle picks listed in an autopick `summary.star`. |
@@ -31,7 +31,7 @@ The current `per-residue-structural-variance.R` implementation assumes PDB objec
 - compatible residue numbering across the two input structure files
 - optional segment IDs, if your PDB/mmCIF files require segment-level disambiguation
 
-If your structures use different segment IDs, rename them before running PRSV or pass segment IDs to `prsv()`. For example, in R with `bio3d`:
+If your structures use different segment IDs, rename them before running PRSV, indicate the chain IDs using the Google Colab notebook, or pass segment IDs to `prsv()`. For example, in R with `bio3d`:
 
 ```r
 pdb$atom[pdb$atom$chain == "J",]$segid <- "A02"
