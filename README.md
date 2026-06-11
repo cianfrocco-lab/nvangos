@@ -9,6 +9,7 @@
 | `Detailed Microtubule Cryo-EM RELION Processing Guide.pdf` | Step-by-step guide to determine one and two protofilament microtubule structures using RELION. |
 | `per-residue-structural-variance.R` | Calculates per-residue structural variance (PRSV) between two structures of the same protein and plots pairwise comparisons. Can be run from Google Colab Notebook or locally|
 | `notebook/per_residue_structural_variance_colab.ipynb` | Python notebook that can run per-residue-structural-variance.R on Goolge Colab |
+| `prsv_to_chimerax_defattr.py` | Converts PRSV CSV values into a ChimeraX residue `.defattr` file for alpha and beta tubulin chains. |
 | `create_scaled_vector_bild_and_defattr_files.py` | Creates ChimeraX `.bild`, `.pb`, and `.defattr` files for visualizing per-residue alpha-carbon displacement vectors between two PDB models of the same protein/biomolecule. |
 | `combine_opposite_register_ptcls_for_seam.py` | Inner-joins two RELION particle STAR files from opposite sides of a 2-protofilament seam stack with alternating registers. |
 | `curate_micrographs_by_particle_picks.py` | Filters a RELION `micrographs_ctf.star` file to retain micrographs with particle picks listed in an autopick `summary.star`. |
@@ -93,6 +94,19 @@ prsv_values <- prsv(
   comp.beta.chain = "B"
 )
 write.csv(prsv_values, "prsv_values.csv", row.names = FALSE)
+```
+### ChimeraX PRSV Attributes
+
+Convert a PRSV CSV into a ChimeraX residue attribute file:
+
+```bash
+python prsv_to_chimerax_defattr.py tacca-v-taxol_prsv.csv docked-gdp-model-nowaternomg_real_space_refined_003.pdb
+```
+
+By default, Alpha PRSV rows are written to chains `A1` and `A2`, and Beta rows are written to `B1` and `B2`. Use `--scale` to multiply all PRSV values before writing:
+
+```bash
+python prsv_to_chimerax_defattr.py tacca-v-taxol_prsv.csv model.pdb --scale 2
 ```
 
 ## Visualizing structural changes using ChimeraX
